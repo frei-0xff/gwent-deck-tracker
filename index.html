@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <link rel='stylesheet' href='style.css' />
+  </head>
+  <body>
+    <button id='start-reorder'>Reorder</button>
+    <button id='cancel-reorder'>Cancel</button>
+    <button id='confirm-reorder'>Confirm</button>
+    <div>
+      <ul id='deck'>
+        
+      </ul>
+      <ul id='graveyard'>
+        
+      </ul>
+    </div>
+    <script src='jquery.min.js'></script>
+    <script>
+      const baseDeck = {
+        bronze: [
+          '[1] Vicovaro Medic',
+          '[2] Imperial Golem',
+          '[2] Imperial Golem',
+          '[2] Imperial Golem',
+          '[2] Emissary',
+          '[2] Emissary',
+          '[2] Emissary',
+          '[4] Nauzicaa Standard Bearer',
+          '[6] Rot Tosser',
+          '[6] Rot Tosser',
+          '[6] Rot Tosser',
+          '[6] Impera Brigade',
+          '[6] Impera Brigade',
+          '[6] Impera Brigade',
+          '[10] Nilfgaardian Knight',
+        ],
+        silver: [
+          '[3] Vanhemar',
+          '[4] Peter Saar Gwynleve',
+          '[4] Roach',
+          '[5] Joachim De Wett',
+          '[10] Assire Var Anahid',
+          '[10] Cantarella',
+        ],
+        gold: [
+          '[w] Ragh Nar Roog',
+          '[4] Rainfarn',
+          '[4] Cahir',
+          '[5] Ciri',
+        ]
+      };
+      const currentDeckOrder = [];
+      Object.keys(baseDeck).forEach((type)=>{
+        baseDeck[type].forEach((card)=>{
+          currentDeckOrder.push({
+            type,
+            card,
+            removed: false
+          })
+        })
+      })
+      let isReordering = false;
+      const updateDeck = ()=>{
+        $('#deck').empty();
+        $('#graveyard').empty();
+        currentDeckOrder.forEach(({type, card, removed}, index)=>{
+          const stack = removed ? $('#graveyard') : $('#deck');
+          stack.append(`<li class='card ${type}' data-index='${index}'>${card} <span class='new-position'></span></li>`);
+        });
+
+        $('.card').click((evt)=>{
+          if (!isReordering) {
+            const index = $(evt.currentTarget).attr('data-index');
+            currentDeckOrder[index].removed = !currentDeckOrder[index].removed;
+            updateDeck();
+          } else {
+            if (evt.shiftKey) {
+              reorderMap[$(evt.currentTarget).attr('data-index')] = Infinity;
+              $(evt.currentTarget).find('.new-position').empty().text('B');
+            } else {
+              reorderMap[$(evt.currentTarget).attr('data-index')] = currentReorderIndex;
+              $(evt.currentTarget).find('.new-position').empty().text(currentReorderIndex);
+            }
+            currentReorderIndex ++;
+          }
+        });
+      }
+      let reorderMap = {};
+      let currentReorderIndex = 1;
+      $('#start-reorder').click(()=>{
+        reorderMap = {};
+        currentReorderIndex = 1;
+        isReordering = true;
+      });
+      $('#cancel-reorder').click(()=>{
+        $('.new-position').empty();
+        isReordering = false;
+      });
+      $('#confirm-reorder').click(()=>{
+        $('.new-position').empty();
+        for (let i = 0; i < currentDeckOrder.length; i ++) {
+          if (reorderMap[i] === undefined) {
+            reorderMap[i] = (i+100);
+          }
+        }
+        const oldDeckOrder = [...currentDeckOrder];
+        currentDeckOrder.sort((a, b)=>{
+          const aIndex = oldDeckOrder.indexOf(a);
+          const bIndex = oldDeckOrder.indexOf(b);
+          return reorderMap[aIndex] - reorderMap[bIndex];
+        });
+        isReordering = false;
+        updateDeck();
+      });
+      updateDeck();
+    </script>
+  </body>
+</html>
